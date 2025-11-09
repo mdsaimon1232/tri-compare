@@ -37,11 +37,11 @@ Copy code
 ```bash
 git clone https://github.com/<yourusername>/tri-compare.git
 cd tri-compare
-2. Install dependencies
+### 2. Install dependencies
 bash
 Copy code
 npm install
-3. Run the app
+### 3. Run the app
 bash
 Copy code
 npm start
