@@ -1,97 +1,97 @@
-TriCompare — ChatGPT × DeepSeek × Gemini (All-in-One AI Dashboard)
+# 🧠 TriCompare — ChatGPT × DeepSeek × Gemini (All-in-One AI Dashboard)
 
-TriCompare is a lightweight Electron app that lets you open and chat with
-OpenAI ChatGPT, DeepSeek, and Google Gemini — all side by side,
-with a single input bar to send one prompt to all, or to any one individually.
-No API keys, no backend — it uses the official web apps directly.
+**TriCompare** is a lightweight **Electron app** that lets you open and chat with  
+**ChatGPT**, **DeepSeek**, and **Google Gemini** — all on one screen.  
+You can send a single prompt to all three at once or message each one individually —  
+**no API keys required**.
 
-🚀 Features
+---
 
-✅ Three AIs in one window — ChatGPT, DeepSeek, Gemini
-✅ Broadcast prompts — Send a message to all three simultaneously
-✅ Per-AI control — Send separate messages to each model
-✅ No API keys required — Uses official web chat interfaces
-✅ Offline local Electron app — Runs fully on your computer
-✅ Smart input injection — Works around React input issues (ChatGPT, DeepSeek)
-✅ One-click startup via included run-tricompare.bat
+## 🚀 Features
 
-🧩 Screenshots
-Chat view	Description
-🖥️ Main window	Three webviews side-by-side: ChatGPT, DeepSeek, Gemini
-💬 Toolbar	Type once → send to all or a single AI
-⚙️ Independent reload	Each AI panel can be reloaded independently
+- 🪄 **Three AIs in one window** — ChatGPT, DeepSeek, Gemini  
+- 💬 **Broadcast prompts** — Send one message to all simultaneously  
+- 🎛️ **Per-AI control** — Send separately to any AI  
+- 🔐 **No API keys or accounts needed** — Uses official web chat UIs  
+- ⚡ **Runs locally** — No data sent anywhere except to the AIs you use  
+- 🧠 **Smart input injection** — Works with modern React inputs  
+- 🪟 **One-click launch** — Via included `run-tricompare.bat`
 
-(You can add your own screenshots here using ![alt](path) if you like.)
+---
 
-📦 Installation
-1️⃣ Clone this repo
+## 🧩 Preview
+
+Each AI opens in its own browser pane inside a single app window:
+
+ChatGPT	DeepSeek	Gemini
+Compare responses side by side		
+
+yaml
+Copy code
+
+---
+
+## 📦 Installation
+
+### 1. Clone the repo
+```bash
 git clone https://github.com/<yourusername>/tri-compare.git
 cd tri-compare
-
-2️⃣ Install dependencies
+2. Install dependencies
+bash
+Copy code
 npm install
-
-3️⃣ Run the app
+3. Run the app
+bash
+Copy code
 npm start
+Windows users: just double-click run-tricompare.bat.
 
+🧰 Project Structure
+bash
+Copy code
+tri-compare/
+├── index.html          # Main Electron UI (3 webviews + control bar)
+├── main.js             # Electron entry point
+├── package.json        # Dependencies and scripts
+├── run-tricompare.bat  # One-click launcher
+└── README.md           # This file
+⚙️ Usage
+Start the app with npm start or run-tricompare.bat.
 
-Or simply double-click the provided run-tricompare.bat (Windows users).
+Log in to ChatGPT, DeepSeek, and Gemini inside their panes (first time only).
+
+Type a prompt in the top bar.
+
+Use:
+
+Send to All → sends to every AI
+
+Send OpenAI / DeepSeek / Gemini → sends to that one only
+
+Compare outputs side-by-side instantly.
 
 🧠 Tech Stack
-Layer	Technology
-UI	HTML, CSS (Tailwind-like minimal styling)
-Backend / Shell	Node.js + Electron
-Browser panels	<webview> (isolated Chromium instances)
-Communication	In-page JavaScript injection with native React input events
-⚙️ Project Structure
-tri-compare/
-├── index.html          # Main Electron UI (three webviews + control bar)
-├── main.js             # Electron app bootstrap
-├── package.json        # Dependencies + scripts
-├── run-tricompare.bat  # One-click startup script for Windows
-└── README.md           # This file
+Electron (multi-webview desktop app)
 
-🪄 Usage
+Node.js for launcher logic
 
-Launch the app (npm start or run-tricompare.bat)
+HTML + Vanilla JS interface
 
-Log in to ChatGPT, DeepSeek, and Gemini inside each panel
-(you only need to do this once)
+No backend, no network code beyond the AIs you open
 
-Type your prompt in the top text bar
-
-Click:
-
-🟢 Send to All — sends to all three AIs
-
-⚪ Send OpenAI / DeepSeek / Gemini — sends to only that AI
-
-🧰 Troubleshooting
+🪄 Troubleshooting
 Issue	Fix
-❌ ChatGPT requires double click	Fixed — the app waits until the Send button is active
-⚠️ “Input box not found”	Make sure you’re on the chat page and logged in
-🧭 Gemini panel blank	Sign in with your Google account
-🪟 Window blank	Run npm install once to install Electron dependencies
-🪶 Slow load	First load caches the sites; subsequent loads are faster
-🧑‍💻 Developer Notes
-
-No external APIs — this app never sends your prompts anywhere but the official AI sites.
-
-If ChatGPT or DeepSeek update their HTML, you can tweak the input selectors in index.html under:
-
-function scriptForChatGPT() { ... }
-function scriptForDeepSeek() { ... }
-
-
-Tested on Windows 10/11, Node.js ≥ 18, Electron ≥ 32.
+ChatGPT needs 2 clicks	Fixed in latest version — waits until Send button is ready
+“Input box not found”	Make sure you’re on the chat page and logged in
+Gemini blank page	Sign in with Google
+Nothing launches	Run npm install first to install Electron
 
 🧾 License
+MIT License — free for personal or commercial use.
+See LICENSE for details.
 
-This project is open source under the MIT License
-.
+💬 Author
+Created by Your Name
+Built for AI researchers and productivity enthusiasts.
 
-💬 Credits
-
-Created by No_One
-
-Inspired by multi-AI comparison workflows for research and productivity.
