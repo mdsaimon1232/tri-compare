@@ -1,0 +1,259 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>TriCompare — Browser (ChatGPT × DeepSeek × Gemini)</title>
+  <style>
+    :root { --bar: 64px; --gap: 6px; font-family: system-ui, Arial, sans-serif; }
+    body { margin: 0; background: #f6f7fb; }
+    .bar { height: var(--bar); display: flex; align-items: center; gap: 8px;
+      padding: 8px; background: #fff; border-bottom: 1px solid #e5e7eb;
+      position: sticky; top: 0; z-index: 2; }
+    input, textarea, button, select { font-size: 14px; border-radius: 10px; border: 1px solid #d1d5db; padding: 8px 10px; }
+    textarea { height: 40px; width: 50%; resize: vertical; }
+    button.primary { background:#111; color:#fff; }
+    .grid { position: absolute; top: var(--bar); left: 0; right: 0; bottom: 0;
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--gap); padding: var(--gap); }
+    .panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+    .panel .head { display:flex; align-items:center; justify-content: space-between; padding: 6px 8px; background:#fafafa; border-bottom:1px solid #eee; font-weight: 600; }
+    .panel .actions { display:flex; gap:6px; align-items:center; }
+    webview { flex: 1; }
+    .toast { position: fixed; right: 12px; bottom: 12px; padding: 10px 12px; background: #111; color:#fff;
+      border-radius: 10px; opacity: 0.95; max-width: 520px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <textarea id="broadcast" placeholder="Type once… then Send to All or to one"></textarea>
+    <button id="sendAll" class="primary">Send to All</button>
+    <button data-one="gpt">Send OpenAI</button>
+    <button data-one="deepseek">Send DeepSeek</button>
+    <button data-one="gemini">Send Gemini</button>
+    <span style="margin-left:auto;opacity:.7;font-size:12px;">Tip: log in on each pane first.</span>
+  </div>
+
+  <div class="grid">
+    <div class="panel" id="panel-gpt">
+      <div class="head">
+        <span>OpenAI (ChatGPT)</span>
+        <div class="actions">
+          <button data-open="gpt">Open</button>
+          <button data-reload="gpt">Reload</button>
+        </div>
+      </div>
+      <!-- Use new domain; still works if it redirects -->
+      <webview id="gpt" src="https://chatgpt.com/" allowpopups></webview>
+    </div>
+
+    <div class="panel" id="panel-deepseek">
+      <div class="head">
+        <span>DeepSeek</span>
+        <div class="actions">
+          <button data-open="deepseek">Open</button>
+          <button data-reload="deepseek">Reload</button>
+        </div>
+      </div>
+      <webview id="deepseek" src="https://chat.deepseek.com/" allowpopups></webview>
+    </div>
+
+    <div class="panel" id="panel-gemini">
+      <div class="head">
+        <span>Gemini</span>
+        <div class="actions">
+          <button data-open="gemini">Open</button>
+          <button data-reload="gemini">Reload</button>
+        </div>
+      </div>
+      <webview id="gemini" src="https://gemini.google.com/app" allowpopups></webview>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" style="display:none;"></div>
+
+  <script>
+    const toast = (msg) => {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => t.style.display = 'none', 3500);
+    };
+
+    const views = {
+      gpt: document.getElementById('gpt'),
+      deepseek: document.getElementById('deepseek'),
+      gemini: document.getElementById('gemini')
+    };
+
+    const OPEN_URLS = {
+      gpt: "https://chatgpt.com/",
+      deepseek: "https://chat.deepseek.com/",
+      gemini: "https://gemini.google.com/app"
+    };
+
+    document.querySelectorAll('[data-open]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-open');
+        views[id].loadURL(OPEN_URLS[id]);
+      });
+    });
+    document.querySelectorAll('[data-reload]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-reload');
+        views[id].reload();
+      });
+    });
+
+    // Native setter helper (works with React-controlled inputs)
+    const setNativeValueJS = `
+      (el, val) => {
+        const proto = el instanceof HTMLTextAreaElement
+          ? HTMLTextAreaElement.prototype
+          : HTMLInputElement.prototype;
+        const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+        desc.set.call(el, val);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    `;
+
+    // --- ChatGPT: single-click reliable sender ---
+    function scriptForChatGPT(text) {
+      const escaped = text.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$');
+      return `
+        (async () => {
+          const $ = (s) => document.querySelector(s);
+          const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+          // If not on chat screen, try to open a new chat
+          let composer = $('#prompt-textarea') || $('textarea[placeholder*="Message"]') || $('textarea');
+          if (!composer) {
+            const newChat = $('a[href="/"]') || $('button[aria-label*="New chat"]');
+            if (newChat) newChat.click();
+            await sleep(300);
+          }
+
+          // Find composer (textarea or contenteditable)
+          composer = $('#prompt-textarea') || $('textarea[placeholder*="Message"]') || $('textarea') ||
+                     $('div[contenteditable="true"][data-testid*="composer"]') || $('div[contenteditable="true"][aria-label*="Message"]');
+          if (!composer) throw new Error('ChatGPT: input box not found');
+
+          composer.focus();
+          const setNativeValue = ${setNativeValueJS};
+          if ('value' in composer) setNativeValue(composer, \`${escaped}\`);
+          else { composer.innerText = \`${escaped}\`; composer.dispatchEvent(new InputEvent('input', { bubbles:true })); }
+
+          // Wait for Send button to exist AND be enabled (avoids double-click need)
+          let sendBtn;
+          const maxWait = 2000;
+          const start = performance.now();
+          while (performance.now() - start < maxWait) {
+            sendBtn = $('[data-testid="send-button"]') || $('button[aria-label="Send"]');
+            if (sendBtn && !sendBtn.disabled && sendBtn.getAttribute('aria-disabled') !== 'true') break;
+            await sleep(50);
+          }
+
+          if (sendBtn && !sendBtn.disabled && sendBtn.getAttribute('aria-disabled') !== 'true') {
+            sendBtn.click();
+            return 'OK';
+          }
+
+          // Fallback: press Enter once
+          composer.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true }));
+          composer.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true }));
+          'OK';
+        })().catch(e => 'ERR:'+e.message);
+      `;
+    }
+
+    function scriptForDeepSeek(text) {
+      const escaped = text.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$');
+      return `
+        (async () => {
+          const qs = (s) => document.querySelector(s);
+          let box = qs('textarea') || qs('[role="textbox"]') || qs('div[contenteditable="true"]');
+          if (!box) throw new Error('DeepSeek: input box not found');
+
+          const isCE = box.getAttribute && box.getAttribute('contenteditable') === 'true';
+          box.focus();
+
+          if (isCE) {
+            box.innerText = \`${escaped}\`;
+            box.dispatchEvent(new InputEvent('input', { bubbles: true, data: \`${escaped}\` }));
+          } else {
+            const setNativeValue = ${setNativeValueJS};
+            setNativeValue(box, \`${escaped}\`);
+          }
+
+          const sendBtn = qs('button[type="submit"]') || qs('button[aria-label*="Send"]') || qs('button:has(svg)');
+          if (sendBtn) sendBtn.click();
+
+          box.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true }));
+          box.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true }));
+          'OK';
+        })().catch(e => 'ERR:'+e.message);
+      `;
+    }
+
+    function scriptForGemini(text) {
+      const escaped = text.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$');
+      return `
+        (async () => {
+          const qs = (s) => document.querySelector(s);
+          let box = qs('textarea') || qs('[role="textbox"]') || qs('div[contenteditable="true"]');
+          if (!box) throw new Error('Gemini: input box not found');
+          box.focus();
+          const setNativeValue = ${setNativeValueJS};
+          if ('value' in box) setNativeValue(box, \`${escaped}\`);
+          else { box.innerText = \`${escaped}\`; box.dispatchEvent(new InputEvent('input', { bubbles:true })); }
+          box.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true }));
+          box.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true }));
+          'OK';
+        })().catch(e => 'ERR:'+e.message);
+      `;
+    }
+
+    async function sendTo(id, text) {
+      const view = views[id];
+      if (!view) return toast('Unknown view: ' + id);
+      if (await view.isLoading()) return toast(id + ': page is still loading…');
+
+      let js;
+      if (id === 'gpt') js = scriptForChatGPT(text);
+      else if (id === 'deepseek') js = scriptForDeepSeek(text);
+      else js = scriptForGemini(text);
+
+      try {
+        const result = await view.executeJavaScript(js, true);
+        if (String(result).startsWith('ERR:')) toast(id.toUpperCase() + ': ' + result.slice(4));
+        else toast('Sent to ' + id.toUpperCase());
+      } catch (e) {
+        toast(id.toUpperCase() + ': ' + e.message);
+      }
+    }
+
+    document.getElementById('sendAll').addEventListener('click', async () => {
+      const txt = document.getElementById('broadcast').value.trim();
+      if (!txt) return toast('Type something first');
+      await sendTo('gpt', txt);
+      await sendTo('deepseek', txt);
+      await sendTo('gemini', txt);
+    });
+
+    document.querySelectorAll('[data-one]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-one');
+        const txt = document.getElementById('broadcast').value.trim();
+        if (!txt) return toast('Type something first');
+        sendTo(id, txt);
+      });
+    });
+
+    Object.values(views).forEach(v => {
+      v.addEventListener('did-fail-load', (e) => {
+        toast(`Failed to load ${v.id}: ${e.errorDescription}`);
+      });
+    });
+  </script>
+</body>
+</html>
