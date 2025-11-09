@@ -101,5 +101,5 @@ See [LICENSE](./LICENSE) for details.
 
 ## 💬 Author
 
-Created by **Your Name**
+Created by **No_One**
 Built for AI researchers and productivity enthusiasts.
