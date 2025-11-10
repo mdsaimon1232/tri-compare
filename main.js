@@ -1,5 +1,5 @@
 // main.js
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, session } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -15,10 +15,15 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      webviewTag: true
+      webviewTag: true,
+      spellcheck: false
     },
-    title: "TriCompare (Browser)"
+    title: "TriCompare"
   });
+
+  // Keep UA clean (remove explicit Electron token)
+  const ses = session.defaultSession;
+  ses.setUserAgent(ses.getUserAgent().replace(/Electron\/[\d.]+\s?/, ""));
 
   win.loadFile(path.join(__dirname, "index.html"));
 }
